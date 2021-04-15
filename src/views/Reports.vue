@@ -1,33 +1,31 @@
 <template>
   <div class="body">
     <h1>
-      <span class="blue">&lt;</span>User List<span class="blue">&gt;</span>
+      <span class="blue">&lt;</span>Report List<span class="blue">&gt;</span>
     </h1>
     <h2>
       Admin: <a href="https://anybrain.gg/">{{ admin.name }}</a>
     </h2>
     <table class="container">
       <thead>
-        <th><h1>User ID</h1></th>
-        <th><h1>Name</h1></th>
-        <th><h1>In-game Time</h1></th>
+        <th><h1>Report ID</h1></th>
+        <th><h1>Report Title</h1></th>
+        <th><h1>Infraction Reported</h1></th>
       </thead>
       <tbody>
         <tr
-          v-for="user in usersData"
-          @click="openModal(user.id)"
-          :key="user.id"
+          v-for="report in reportsData"
+          @click="openModal(report.id)"
+          :key="report.id"
         >
-          <td>{{ user.id }}</td>
-          <td>{{ user.name }}</td>
-          <td>{{ user.playtime }}h</td>
+          <td>{{ report.id }}</td>
+          <td>{{ report.title }}</td>
+          <td>{{ report.infraction }}</td>
         </tr>
       </tbody>
     </table>
     <div class="report-list">
-      <button class="report-list-button" @click="goReports()">
-        Report List
-      </button>
+      <button class="report-list-button" @click="goUsers()">User List</button>
     </div>
     <!-- Opacidade -->
     <transition name="fade" appear>
@@ -37,14 +35,19 @@
     <transition name="slide" appear>
       <div class="modal" v-if="showModal">
         <header>
-          <h1>Report Form</h1>
-          <form action="" class="col-md-6" @submit.prevent="handleSubmit()">
+          <h1>Report Details</h1>
+          <form action="" class="col-md-6">
             <label for="user-id">User ID</label>
-            <input id="user-id" :value="chosenUser" type="text" readonly />
-            <label for="user-name">User Name</label>
+            <input
+              id="user-id"
+              :value="chosenReport.userId"
+              type="text"
+              readonly
+            />
+            <label for="user-name">Admin ID</label>
             <input
               id="user-name"
-              :value="chosenUserName"
+              :value="chosenReport.adminId"
               type="text"
               readonly
             />
@@ -64,8 +67,11 @@
               <option value="AFKing">AFKing</option>
               <option value="Friendly Fire">Friendly Fire</option>
             </select>
-            <div class="submit">
-              <button>Submit Report</button>
+            <div class="row">
+              <button @click.prevent="handleEdit()">Edit Report</button>
+              <button class="delete" @click.prevent="handleDelete()">
+                Delete Report
+              </button>
             </div>
           </form>
         </header>
@@ -74,59 +80,62 @@
   </div>
 </template>
 <script>
-// @ is an alias to /src
-import users from "../../Files/Users";
 import reports from "../../Files/Reports";
 export default {
-  name: "Home",
+  name: "Reports",
   components: {},
   data() {
     return {
-      usersData: users,
       reportsData: reports,
       admin: { id: 0, name: "AnyBrain" },
       showModal: false,
-      chosenUser: 0,
-      chosenUserName: "",
       reportTitle: "",
       reportDescription: "",
       infraction: "",
+      chosenReport: {},
     };
   },
   methods: {
-    openModal: function (userid) {
-      for (var i of this.usersData) {
-        if (i.id == userid) {
-          this.chosenUserName = i.name;
+    openModal: function (reportId) {
+      for (var i of this.reportsData) {
+        if (i.id == reportId) {
+          this.chosenReport = i;
+          this.reportTitle = this.chosenReport.title;
+          this.reportDescription = this.chosenReport.description;
+          this.infraction = this.chosenReport.infraction;
         }
       }
-      this.chosenUser = userid;
       this.showModal = true;
     },
     closeModal: function () {
       this.showModal = false;
-      this.chosenUser = 0;
-      this.chosenUserName = "";
       this.reportTitle = "";
       this.reportDescription = "";
       this.infraction = "";
+      this.chosenReport = {};
     },
-    handleSubmit: function () {
-      var idTmp = this.reportsData[this.reportsData.length - 1].id + 1;
-      const obj = {
-        id: idTmp,
-        userId: this.chosenUser,
-        adminId: this.admin.id,
-        title: this.reportTitle,
-        description: this.reportDescription,
-        infraction: this.infraction,
-      };
-      this.reportsData.push(obj);
-
+    handleEdit: function () {
+      this.chosenReport.title = this.reportTitle;
+      this.chosenReport.description = this.reportDescription;
+      this.chosenReport.infraction = this.infraction;
+      for (var i of this.reportsData) {
+        if (i.id == this.chosenReport.id)
+          this.reportsData[i] = this.chosenReport;
+      }
+      //podiamos autalizar a coleçao toda ou fazer um pedido PUT isolado para editar o report com o id selecioando
       this.closeModal();
     },
-    goReports: function () {
-      this.$router.push("/reports");
+    handleDelete: function () {
+      //enviar pedido DELETE para o id de report indicado
+      for (var i = 0; i < this.reportsData.length; i++) {
+        if (this.reportsData[i].id == this.chosenReport.id) {
+          this.reportsData.splice(i, 1);
+        }
+      }
+      this.closeModal();
+    },
+    goUsers: function () {
+      this.$router.push("/");
     },
   },
 };
@@ -134,7 +143,6 @@ export default {
 <style scoped>
 @charset "UTF-8";
 @import url(https://fonts.googleapis.com/css?family=Open+Sans:300, 400, 700);
-
 .body {
   font-family: "Open Sans", sans-serif;
   font-weight: 300;
@@ -327,6 +335,7 @@ button {
   background: #4dc3fa;
   border: 0;
   padding: 10px 20px;
+  margin: 5px;
   margin-top: 20px;
   color: #323c50;
   border-radius: 20px;
@@ -360,5 +369,21 @@ button:hover {
   margin-top: 0px;
   color: #323c50;
   border-radius: 40px;
+}
+.row {
+  text-align: center;
+}
+.delete:hover {
+  background-color: #ff4242;
+  color: #401010;
+  font-weight: bold;
+  box-shadow: #7f2121 -1px 1px, #7f2121 -2px 2px, #7f2121 -3px 3px,
+    #7f2121 -4px 4px, #7f2121 -5px 5px, #7f2121 -6px 6px;
+  transform: translate3d(6px, -6px, 0);
+  transition-delay: 0s;
+  transition-duration: 0.4s;
+  transition-property: all;
+  transition-timing-function: line;
+  cursor: pointer;
 }
 </style>
